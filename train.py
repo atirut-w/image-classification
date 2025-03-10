@@ -152,42 +152,57 @@ def create_cnn_model():
     
     return model
 
-# Model 2: Deeper CNN - enhanced architecture for CPU training
+# Model 2: ResNet-style CNN with skip connections
 def create_deeper_cnn_model():
-    model = Sequential([
-        # First convolutional block
-        Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-        Conv2D(32, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        Dropout(0.2),  # Reduced dropout
-        
-        # Second convolutional block
-        Conv2D(64, (3, 3), activation='relu', padding='same'),
-        Conv2D(64, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        Dropout(0.2),
-        
-        # Third convolutional block
-        Conv2D(128, (3, 3), activation='relu', padding='same'),
-        Conv2D(128, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        Dropout(0.2),
-        
-        # Fourth convolutional block
-        Conv2D(128, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        
-        # Flatten and dense layers
-        Flatten(),
-        Dense(256, activation='relu'),
-        Dropout(0.3),
-        Dense(128, activation='relu'),
-        Dropout(0.3),
-        Dense(num_classes, activation='softmax')
-    ])
+    # Cannot use Sequential for a ResNet-style model with skip connections
+    # We need to use the Functional API instead
+    
+    inputs = keras.Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3))
+    
+    # Initial convolution
+    x = Conv2D(32, (7, 7), strides=2, padding='same')(inputs)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.Activation('relu')(x)
+    x = MaxPooling2D(3, strides=2, padding='same')(x)
+    
+    # First residual block
+    residual = x
+    x = Conv2D(32, (3, 3), padding='same', activation='relu')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = Conv2D(32, (3, 3), padding='same')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.add([x, residual])  # Skip connection
+    x = keras.layers.Activation('relu')(x)
+    
+    # Second residual block with projection
+    residual = Conv2D(64, (1, 1), strides=2, padding='same')(x)
+    x = Conv2D(64, (3, 3), padding='same', activation='relu')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = Conv2D(64, (3, 3), strides=2, padding='same')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.add([x, residual])  # Skip connection with projection
+    x = keras.layers.Activation('relu')(x)
+    
+    # Third residual block with projection
+    residual = Conv2D(128, (1, 1), strides=2, padding='same')(x)
+    x = Conv2D(128, (3, 3), padding='same', activation='relu')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = Conv2D(128, (3, 3), strides=2, padding='same')(x)
+    x = keras.layers.BatchNormalization()(x)
+    x = keras.layers.add([x, residual])  # Skip connection with projection
+    x = keras.layers.Activation('relu')(x)
+    
+    # Global average pooling and classification
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    x = Dropout(0.3)(x)
+    outputs = Dense(num_classes, activation='softmax')(x)
+    
+    # Create and compile model
+    model = keras.Model(inputs, outputs, name="resnet_style_cnn")
     
     model.compile(
-        optimizer=Adam(learning_rate=0.0002),  # Adjusted learning rate
+        optimizer=Adam(learning_rate=0.0002),
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
