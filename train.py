@@ -35,13 +35,13 @@ from keras.optimizers import Adam
 from keras.utils import image_dataset_from_directory
 
 # Parameters - extremely optimized for laptop CPU
-BATCH_SIZE = 128  # Very large batch size for faster training
-EPOCHS = 3        # Minimal epochs
+BATCH_SIZE = 32   # Smaller batch size for better learning with small datasets
+EPOCHS = 10       # Minimal epochs
 IMG_HEIGHT = 128  # Very small image size
 IMG_WIDTH = 128   # Very small image size
 DATASET_PATH = "dataset"
-USE_SUBSET = True # Use only a subset of data for even faster training
-SUBSET_SIZE = 0.2 # Use 20% of the dataset
+USE_SUBSET = False # Use all available data
+SUBSET_SIZE = 0.2  # Use 20% of the dataset if USE_SUBSET is True
 
 # Data augmentation for training
 data_augmentation = keras.Sequential([
@@ -117,76 +117,107 @@ except ValueError as e:
     print("Directory structure created. Please add images to these directories and run the script again.")
     exit(1)
 
-# Model 1: Simple CNN - tiny architecture for CPU training
+# Model 1: Simple CNN - improved architecture for CPU training
 def create_cnn_model():
     model = Sequential([
-        Conv2D(8, (3, 3), activation='relu', padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-        MaxPooling2D(2, 2),
+        # First convolutional block - double filters
+        Conv2D(16, (3, 3), activation='relu', padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
         Conv2D(16, (3, 3), activation='relu', padding='same'),
         MaxPooling2D(2, 2),
+        
+        # Second convolutional block - double filters
+        Conv2D(32, (3, 3), activation='relu', padding='same'),
         Conv2D(32, (3, 3), activation='relu', padding='same'),
         MaxPooling2D(2, 2),
+        
+        # Third convolutional block - double filters
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        MaxPooling2D(2, 2),
+        
+        # Flatten and dense layers
         Flatten(),
+        Dense(128, activation='relu'),
+        Dropout(0.3),  # Less dropout to retain more information
         Dense(64, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.3),
         Dense(num_classes, activation='softmax')
     ])
     
     model.compile(
-        optimizer=Adam(learning_rate=0.001),
+        optimizer=Adam(learning_rate=0.0005),  # Lower learning rate for better convergence
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
     
     return model
 
-# Model 2: Deeper CNN - tiny architecture for CPU training
+# Model 2: Deeper CNN - enhanced architecture for CPU training
 def create_deeper_cnn_model():
     model = Sequential([
-        Conv2D(8, (3, 3), activation='relu', padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-        Conv2D(8, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        Dropout(0.25),
-        
-        Conv2D(16, (3, 3), activation='relu', padding='same'),
-        Conv2D(16, (3, 3), activation='relu', padding='same'),
-        MaxPooling2D(2, 2),
-        Dropout(0.25),
-        
-        Conv2D(32, (3, 3), activation='relu', padding='same'),
+        # First convolutional block
+        Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
         Conv2D(32, (3, 3), activation='relu', padding='same'),
         MaxPooling2D(2, 2),
-        Dropout(0.25),
+        Dropout(0.2),  # Reduced dropout
         
+        # Second convolutional block
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        MaxPooling2D(2, 2),
+        Dropout(0.2),
+        
+        # Third convolutional block
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        MaxPooling2D(2, 2),
+        Dropout(0.2),
+        
+        # Fourth convolutional block
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        MaxPooling2D(2, 2),
+        
+        # Flatten and dense layers
         Flatten(),
-        Dense(64, activation='relu'),
-        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.3),
+        Dense(128, activation='relu'),
+        Dropout(0.3),
         Dense(num_classes, activation='softmax')
     ])
     
     model.compile(
-        optimizer=Adam(learning_rate=0.0001),
+        optimizer=Adam(learning_rate=0.0002),  # Adjusted learning rate
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
     
     return model
 
-# Model 3: ANN (No convolutions) - tiny architecture for CPU training
+# Model 3: ANN (No convolutions) - improved architecture for CPU training
 def create_ann_model():
     model = Sequential([
         Flatten(input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+        
+        # Larger and deeper network
+        Dense(512, activation='relu'),
+        Dropout(0.3),
+        
+        Dense(256, activation='relu'),
+        Dropout(0.3),
+        
         Dense(128, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.3),
+        
         Dense(64, activation='relu'),
-        Dropout(0.5),
-        Dense(32, activation='relu'),
-        Dropout(0.5),
+        Dropout(0.3),
+        
         Dense(num_classes, activation='softmax')
     ])
     
+    # Add batch normalization and regularization to improve training
     model.compile(
-        optimizer=Adam(learning_rate=0.001),
+        optimizer=Adam(learning_rate=0.0003),  # Lower learning rate for better convergence
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
