@@ -270,35 +270,74 @@ def train_and_save_model(model, model_name):
     return history
 
 if __name__ == "__main__":
-    import argparse
+    # Check if this is running in a notebook environment
+    try:
+        # This will only be defined in IPython/Jupyter environments
+        get_ipython()
+        IN_NOTEBOOK = True
+    except NameError:
+        IN_NOTEBOOK = False
     
-    parser = argparse.ArgumentParser(description="Train image classification models")
-    parser.add_argument("--dataset", default="dataset", help="Path to dataset directory")
-    parser.add_argument("--epochs", type=int, default=EPOCHS, help="Number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for training")
-    parser.add_argument("--model-suffix", default="", help="Suffix to add to model names")
-    parser.add_argument("--models", default="all", choices=["all", "cnn", "deeper_cnn", "ann"], 
-                        help="Which models to train (default: all)")
-    
-    args = parser.parse_args()
-    
-    # Update global parameters
-    DATASET_PATH = args.dataset
-    EPOCHS = args.epochs
-    BATCH_SIZE = args.batch_size
-    MODEL_NAME_SUFFIX = args.model_suffix
-    
-    # Create and train the selected models
-    if args.models in ["all", "cnn"]:
-        cnn_model = create_cnn_model()
-        train_and_save_model(cnn_model, "simple_cnn")
-    
-    if args.models in ["all", "deeper_cnn"]:
-        deeper_cnn_model = create_deeper_cnn_model()
-        train_and_save_model(deeper_cnn_model, "deeper_cnn")
-    
-    if args.models in ["all", "ann"]:
-        ann_model = create_ann_model()
-        train_and_save_model(ann_model, "ann")
-    
-    print("\nTraining complete. All models saved.")
+    # Use argparse only if not in a notebook
+    if IN_NOTEBOOK:
+        # Default values for notebook environment
+        dataset_dir = "dataset"
+        epochs = EPOCHS
+        batch_size = BATCH_SIZE
+        model_suffix = "biomes"
+        models_to_train = "all"  # Can be "all", "cnn", "deeper_cnn", "ann"
+        
+        # Update global parameters
+        DATASET_PATH = dataset_dir
+        EPOCHS = epochs
+        BATCH_SIZE = batch_size
+        MODEL_NAME_SUFFIX = model_suffix
+        
+        # Create and train the selected models
+        if models_to_train in ["all", "cnn"]:
+            cnn_model = create_cnn_model()
+            train_and_save_model(cnn_model, "simple_cnn")
+        
+        if models_to_train in ["all", "deeper_cnn"]:
+            deeper_cnn_model = create_deeper_cnn_model()
+            train_and_save_model(deeper_cnn_model, "deeper_cnn")
+        
+        if models_to_train in ["all", "ann"]:
+            ann_model = create_ann_model()
+            train_and_save_model(ann_model, "ann")
+        
+        print("\nTraining complete. All models saved.")
+    else:
+        # Command-line usage
+        import argparse
+        
+        parser = argparse.ArgumentParser(description="Train image classification models")
+        parser.add_argument("--dataset", default="dataset", help="Path to dataset directory")
+        parser.add_argument("--epochs", type=int, default=EPOCHS, help="Number of training epochs")
+        parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for training")
+        parser.add_argument("--model-suffix", default="", help="Suffix to add to model names")
+        parser.add_argument("--models", default="all", choices=["all", "cnn", "deeper_cnn", "ann"], 
+                            help="Which models to train (default: all)")
+        
+        args = parser.parse_args()
+        
+        # Update global parameters
+        DATASET_PATH = args.dataset
+        EPOCHS = args.epochs
+        BATCH_SIZE = args.batch_size
+        MODEL_NAME_SUFFIX = args.model_suffix
+        
+        # Create and train the selected models
+        if args.models in ["all", "cnn"]:
+            cnn_model = create_cnn_model()
+            train_and_save_model(cnn_model, "simple_cnn")
+        
+        if args.models in ["all", "deeper_cnn"]:
+            deeper_cnn_model = create_deeper_cnn_model()
+            train_and_save_model(deeper_cnn_model, "deeper_cnn")
+        
+        if args.models in ["all", "ann"]:
+            ann_model = create_ann_model()
+            train_and_save_model(ann_model, "ann")
+        
+        print("\nTraining complete. All models saved.")

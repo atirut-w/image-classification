@@ -441,4 +441,15 @@ def main():
         export_results_to_csv(eval_results_list, filename=export_filename)
 
 if __name__ == "__main__":
-    main()
+    # Check if this is running in a notebook environment
+    try:
+        # This will only be defined in IPython/Jupyter environments
+        get_ipython()
+        IN_NOTEBOOK = True
+    except NameError:
+        IN_NOTEBOOK = False
+    
+    # Call main only if not in a notebook
+    if not IN_NOTEBOOK:
+        main()
+    # For notebooks, the functions will be called directly rather than through main()
