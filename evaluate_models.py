@@ -208,6 +208,89 @@ def plot_confusion_matrix(eval_results, save_path=None):
     else:
         plt.show()
 
+def plot_model_comparison(eval_results_list, save_path=None):
+    """Plot a single comprehensive graph comparing models by accuracy, precision, and recall"""
+    if not eval_results_list:
+        return
+    
+    # Extract model names and metrics
+    model_names = [os.path.splitext(result['model_name'])[0] for result in eval_results_list]
+    accuracy_scores = [result['accuracy'] for result in eval_results_list]
+    precision_scores = [result['precision'] for result in eval_results_list]
+    recall_scores = [result['recall'] for result in eval_results_list]
+    f1_scores = [result['f1_score'] for result in eval_results_list]
+    
+    # Create figure and axes
+    fig, ax = plt.figure(figsize=(12, 8)), plt.gca()
+    
+    # Set position of bar on X axis
+    x = np.arange(len(model_names))
+    width = 0.2
+    
+    # Make the plot
+    rects1 = ax.bar(x - width*1.5, accuracy_scores, width, label='Accuracy', color='#1f77b4')
+    rects2 = ax.bar(x - width/2, precision_scores, width, label='Precision', color='#ff7f0e')
+    rects3 = ax.bar(x + width/2, recall_scores, width, label='Recall', color='#2ca02c')
+    rects4 = ax.bar(x + width*1.5, f1_scores, width, label='F1 Score', color='#d62728')
+    
+    # Add labels, title and legend
+    ax.set_xlabel('Models', fontsize=12)
+    ax.set_ylabel('Score', fontsize=12)
+    ax.set_title('Model Performance Comparison', fontsize=14, fontweight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(model_names, rotation=45, ha='right')
+    ax.set_yticks(np.arange(0, 1.1, 0.1))
+    ax.set_ylim(0, 1.05)
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.legend(fontsize=10)
+    
+    # Add value labels on bars
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate(f'{height:.3f}',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=8, rotation=0)
+    
+    autolabel(rects1)
+    autolabel(rects2)
+    autolabel(rects3)
+    autolabel(rects4)
+    
+    # Add a second axis for inference time
+    ax2 = ax.twinx()
+    inference_times = [result['inference_time_per_image'] * 1000 for result in eval_results_list]  # in ms
+    line = ax2.plot(x, inference_times, 'o-', color='#9467bd', label='Inference Time (ms)')
+    
+    # Set y-axis properties for inference time
+    max_time = max(inference_times) * 1.2
+    ax2.set_ylim(0, max_time)
+    ax2.set_ylabel('Inference Time (ms/image)', color='#9467bd', fontsize=12)
+    ax2.tick_params(axis='y', labelcolor='#9467bd')
+    
+    # Add labels for inference time
+    for i, time in enumerate(inference_times):
+        ax2.annotate(f'{time:.2f}ms',
+                    xy=(x[i], time),
+                    xytext=(0, 5),
+                    textcoords="offset points",
+                    ha='center', va='bottom', fontsize=8, color='#9467bd')
+    
+    # Add a legend for inference time
+    lines, labels = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines + lines2, labels + labels2, loc='upper right')
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path)
+        print(f"Model comparison chart saved to {save_path}")
+    else:
+        plt.show()
+
 def rank_models(eval_results_list, sort_by='accuracy'):
     """Rank models based on specified metric"""
     # Define sorting key based on specified metric
@@ -283,6 +366,8 @@ def main():
                         help="Metric to sort models by")
     parser.add_argument("--export", help="Export results to a CSV file with the specified name")
     parser.add_argument("--plot-cm", action="store_true", help="Plot confusion matrices")
+    parser.add_argument("--chart", help="Save the performance comparison chart to the specified file")
+    parser.add_argument("--no-chart", action="store_true", help="Don't generate the comparison chart")
     
     args = parser.parse_args()
     
@@ -342,6 +427,11 @@ def main():
     
     # Rank models
     ranked_models = rank_models(eval_results_list, sort_by=args.sort_by)
+    
+    # Generate comparison chart
+    if len(eval_results_list) >= 2 and not args.no_chart:
+        chart_path = args.chart if args.chart else None
+        plot_model_comparison(eval_results_list, save_path=chart_path)
     
     # Export results if requested
     if args.export:
