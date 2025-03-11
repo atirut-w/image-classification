@@ -3,6 +3,10 @@ dataset/*
 !dataset/README.md
 nether_comparison_data/
 
+# Model files
+*.h5
+*.keras
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
