@@ -36,12 +36,13 @@ from keras.utils import image_dataset_from_directory
 
 # Parameters - extremely optimized for laptop CPU
 BATCH_SIZE = 32   # Smaller batch size for better learning with small datasets
-EPOCHS = 10       # Minimal epochs
+EPOCHS = 15       # Increased epochs for more detailed classes
 IMG_HEIGHT = 128  # Very small image size
 IMG_WIDTH = 128   # Very small image size
 DATASET_PATH = "dataset"
 USE_SUBSET = False # Use all available data
 SUBSET_SIZE = 0.2  # Use 20% of the dataset if USE_SUBSET is True
+MODEL_NAME_SUFFIX = ""  # Optional suffix for model names
 
 # Data augmentation for training
 data_augmentation = keras.Sequential([
@@ -241,6 +242,10 @@ def create_ann_model():
 
 # Train and save models
 def train_and_save_model(model, model_name):
+    # Add suffix if provided
+    if MODEL_NAME_SUFFIX:
+        model_name = f"{model_name}_{MODEL_NAME_SUFFIX}"
+    
     print(f"\nTraining {model_name}...")
     model.summary()
     
@@ -264,14 +269,36 @@ def train_and_save_model(model, model_name):
     
     return history
 
-# Create and train the models
-cnn_model = create_cnn_model()
-train_and_save_model(cnn_model, "simple_cnn")
-
-deeper_cnn_model = create_deeper_cnn_model()
-train_and_save_model(deeper_cnn_model, "deeper_cnn")
-
-ann_model = create_ann_model()
-train_and_save_model(ann_model, "ann")
-
-print("\nTraining complete. All models saved.")
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Train image classification models")
+    parser.add_argument("--dataset", default="dataset", help="Path to dataset directory")
+    parser.add_argument("--epochs", type=int, default=EPOCHS, help="Number of training epochs")
+    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for training")
+    parser.add_argument("--model-suffix", default="", help="Suffix to add to model names")
+    parser.add_argument("--models", default="all", choices=["all", "cnn", "deeper_cnn", "ann"], 
+                        help="Which models to train (default: all)")
+    
+    args = parser.parse_args()
+    
+    # Update global parameters
+    DATASET_PATH = args.dataset
+    EPOCHS = args.epochs
+    BATCH_SIZE = args.batch_size
+    MODEL_NAME_SUFFIX = args.model_suffix
+    
+    # Create and train the selected models
+    if args.models in ["all", "cnn"]:
+        cnn_model = create_cnn_model()
+        train_and_save_model(cnn_model, "simple_cnn")
+    
+    if args.models in ["all", "deeper_cnn"]:
+        deeper_cnn_model = create_deeper_cnn_model()
+        train_and_save_model(deeper_cnn_model, "deeper_cnn")
+    
+    if args.models in ["all", "ann"]:
+        ann_model = create_ann_model()
+        train_and_save_model(ann_model, "ann")
+    
+    print("\nTraining complete. All models saved.")
